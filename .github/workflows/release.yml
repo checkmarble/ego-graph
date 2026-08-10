@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Node 24 ships an npm CLI new enough for trusted publishing (OIDC).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Verify tag matches package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag v$TAG does not match package.json version $VERSION"
+            exit 1
+          fi
+
+      - name: Build and check package
+        run: bun run prepublishOnly
+
+      # Trusted publishing: configure this workflow as a trusted publisher on
+      # npmjs.com (package settings → Trusted Publisher → release.yml).
+      # No NPM_TOKEN. Do not set NODE_AUTH_TOKEN here.
+      - name: Publish to npm
+        run: npm publish --access public
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag

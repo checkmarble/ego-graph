@@ -13,12 +13,30 @@
     "visualization"
   ],
   "license": "MIT",
+  "author": {
+    "name": "Checkmarble",
+    "url": "https://checkmarble.com"
+  },
+  "maintainers": [
+    {
+      "name": "William Schlegel",
+      "url": "https://github.com/william-schlegel"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/checkmarble/ego-graph.git"
   },
   "homepage": "https://github.com/checkmarble/ego-graph#readme",
-  "bugs": "https://github.com/checkmarble/ego-graph/issues",
+  "bugs": {
+    "url": "https://github.com/checkmarble/ego-graph/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "sideEffects": false,
   "type": "module",
   "files": [
