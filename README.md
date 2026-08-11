@@ -16,7 +16,7 @@ in the middle with its neighbourhood arranged around it.
 
 ## Documentation
 
-Full documentation and examples [here](https://ego-graph-documentation.vercel.app/)
+Full documentation and examples [Full documentation and examples](https://ego-graph-documentation.vercel.app/)
 
 ![full react flow example with source](./docs/full-react-flow-example.png)
 
