@@ -14,6 +14,12 @@ is *about*: a customer and their connections, a person and their network, an
 account and everything touching it. That is an ego graph, and it wants the root
 in the middle with its neighbourhood arranged around it.
 
+## Documentation
+
+Full documentation and examples [here](https://ego-graph-documentation.vercel.app/)
+
+![full react flow example with source](./docs/full-react-flow-example.png)
+
 ## Install
 
 ```sh
