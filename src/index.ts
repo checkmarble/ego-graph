@@ -1,3 +1,4 @@
+export { LAYOUT_NAMES, type LayoutName } from './layout-names';
 export { polarPetal } from './layouts/polar-petal';
 export { radialDagre } from './layouts/radial-dagre';
 export { sectoredDagre } from './layouts/sectored-dagre';
