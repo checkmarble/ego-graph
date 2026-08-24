@@ -89,7 +89,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@biomejs/biome": "2.5.2",
+    "@biomejs/biome": "2.5.9",
     "@dagrejs/dagre": "^3.0.0",
     "publint": "^0.3.23",
     "tsdown": "^0.22.14",
