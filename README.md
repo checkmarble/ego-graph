@@ -51,16 +51,38 @@ returns `Map<id, { x, y }>` of **top-left** positions. It is synchronous, has no
 dependencies, and does not import React. The `react-flow` adapter is four pure
 functions and does not import React either.
 
-## The three layouts
+## Layouts
 
-All three centre the root at the origin and place unreachable nodes in pockets
-on an outer arc. They differ only in how a branch is drawn.
+`customLayout` picks how **the first ring** and **every deeper parent** place their
+direct children. Next layers may be one spec, or a ladder of bands keyed by
+direct-child count. The named presets are shortcuts:
 
 | | | dependency |
 |---|---|---|
-| `radialDagre` | A ring of level-1 branches, each drawn by Dagre pointing outward. The workhorse — deep, uneven branches stay legible. | `@dagrejs/dagre` |
-| `sectoredDagre` | Every node lays out its own children, splitting them across sectors once there are more than five. Balances better on wide, shallow graphs. | `@dagrejs/dagre` |
-| `polarPetal` | Pure polar placement all the way down: each node spreads its children over a hemisphere centred on the ray it arrived along. | **none** |
+| `polarPetal` | radial, then radial | **none** |
+| `sectoredDagre` | sectors of Dagre pockets once a parent is bushy | `@dagrejs/dagre` |
+| `radialDagre` | a ring of level-1 branches, each remaining subtree drawn by Dagre as one unit | `@dagrejs/dagre` |
+
+Layer modes:
+
+| mode | |
+|---|---|
+| `radial` | polarPetal's ring at the root, hemisphere deeper |
+| `dagre` | one shallow Dagre pocket along the outbound ray |
+| `cloud` | concentric rings so the group stays round |
+
+```ts
+import { customLayout } from 'ego-graph';
+
+customLayout(graph, {
+  firstLayer: { mode: 'cloud' },
+  nextLayers: [
+    { upTo: 5, mode: 'dagre' },
+    { upTo: 20, mode: 'radial' },
+    { mode: 'cloud' },
+  ],
+});
+```
 
 `@dagrejs/dagre` is an **optional peer dependency**. It is reachable from
 exactly one module, so importing only `polarPetal` leaves it out of your bundle
@@ -169,7 +191,7 @@ differently, pass a mapper: `retargetHandles(nodes, edges, (side, kind) => ...)`
 
 ## Spacing
 
-Six dials, all optional. Defaults are tuned for roughly 180×56 nodes — if yours
+Seven dials, all optional. Defaults are tuned for roughly 180×56 nodes — if yours
 are much bigger, scale them up, because nothing here derives spacing from the
 nodes it is spacing.
 
@@ -179,6 +201,7 @@ nodes it is spacing.
 | `rankSep` | `100` | gap between ranks inside a Dagre sub-layout |
 | `minRingRadius` | `220` | floor on the first ring, so level-1 clears the root |
 | `ringPadding` | `60` | extra space between adjacent branches |
+| `innerRingCapacity` | `6` | nodes on the innermost cloud ring (1–15). Further rings hold 2×, 3×, … |
 | `satelliteGap` | `π/3` | satellites within this angle of each other get fanned |
 | `minSatelliteGap` | `π/12` | floor on the gap between fanned satellites |
 

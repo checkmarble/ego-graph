@@ -9,12 +9,20 @@ export const DEFAULT_SPACING: Required<SpacingOptions> = {
   rankSep: 100,
   minRingRadius: 220,
   ringPadding: 60,
+  innerRingCapacity: 6,
   satelliteGap: Math.PI / 3,
   minSatelliteGap: Math.PI / 12,
 };
 
 export type ResolvedOptions<N extends LayoutNode, E extends LayoutEdge> = Required<SpacingOptions> &
   Required<ClassifyOptions<N, E>>;
+
+const INNER_RING_CAPACITY_MIN = 1;
+const INNER_RING_CAPACITY_MAX = 15;
+
+function clampInnerRingCapacity(value: number): number {
+  return Math.min(INNER_RING_CAPACITY_MAX, Math.max(INNER_RING_CAPACITY_MIN, Math.floor(value)));
+}
 
 /** Fill in every dial and predicate, so nothing downstream has to handle `undefined`. */
 export function resolveOptions<N extends LayoutNode, E extends LayoutEdge>(
@@ -23,6 +31,7 @@ export function resolveOptions<N extends LayoutNode, E extends LayoutEdge>(
   return {
     ...DEFAULT_SPACING,
     ...options,
+    innerRingCapacity: clampInnerRingCapacity(options.innerRingCapacity ?? DEFAULT_SPACING.innerRingCapacity),
     isStructural: options.isStructural ?? (() => true),
     isSatellite: options.isSatellite ?? (() => false),
     getWeight: options.getWeight ?? (() => 1),
