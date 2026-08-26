@@ -39,6 +39,11 @@ definition, shared by layout and folding.
 **Slot** — one angular position on a ring. **Sector** — a wedge of the circle
 allotted to a group of children.
 
+**Cloud** — direct children packed into concentric rings so the group stays
+round. The inner ring holds `threshold` nodes; each further ring holds one more
+multiple of that. At the root the disk is centred on the ego; deeper, it sits
+in front of the parent along the outbound ray.
+
 **Pocket** — the angular region allotted to one satellite and the island hanging
 off it, on an arc outside everything the tree placed.
 

@@ -47,7 +47,7 @@ export type ClassifyOptions<N extends LayoutNode = LayoutNode, E extends LayoutE
   getWeight?: (node: N) => number;
 };
 
-/** Spacing dials. All lengths in the same units as node width/height. */
+/** Spacing dials. Lengths are in the same units as node width/height. */
 export type SpacingOptions = {
   /** Gap between siblings within a Dagre sub-layout. */
   nodeSep?: number;
@@ -57,6 +57,11 @@ export type SpacingOptions = {
   minRingRadius?: number;
   /** Extra space between adjacent subtrees' lateral extents. */
   ringPadding?: number;
+  /**
+   * Nodes on the innermost cloud ring. Further rings hold 2×, 3×, … that many.
+   * Clamped to 1–15.
+   */
+  innerRingCapacity?: number;
   /**
    * Satellites whose preferred angles fall within this circular distance count
    * as wanting the same side, and get fanned along an outer arc rather than

@@ -6,6 +6,16 @@ import { buildChildrenMap } from '../tree';
 import type { LayoutNode, Point, SpacingOptions } from '../types';
 import type { PocketStrategy } from './pocket-strategy';
 
+export type PlaceRadialArgs = {
+  parentId: string;
+  outboundTheta: number | null;
+  children: Map<string, string[]>;
+  nodesById: Map<string, LayoutNode>;
+  positionById: Map<string, Point>;
+  spacing: Required<SpacingOptions>;
+  weightOf: (id: string) => number;
+};
+
 export type PolarTreeArgs = {
   nodeId: string;
   /** `null` at the root, which then spreads its children over the full circle. */
@@ -21,26 +31,21 @@ export type PolarTreeArgs = {
 };
 
 /**
- * Pure polar flower-petal placement: 360° at the root, else a 180° hemisphere
- * centered on the outbound ray. No Dagre.
+ * Polar placement of direct children only: full circle at the root, otherwise a
+ * hemisphere on the outbound ray. Recursion is the caller's job.
  */
-export function layoutPolarTree(args: PolarTreeArgs): void {
-  const { nodeId, outboundTheta, children, nodesById, positionById, ringThetas, isRoot, spacing, weightOf } = args;
-  const kidIds = children.get(nodeId) ?? [];
+export function placeRadialChildren(args: PlaceRadialArgs): void {
+  const { parentId, outboundTheta, children, nodesById, positionById, spacing, weightOf } = args;
+  const kidIds = children.get(parentId) ?? [];
   const n = kidIds.length;
   if (n === 0) return;
 
-  const parentPos = positionById.get(nodeId);
-  const parentNode = nodesById.get(nodeId);
+  const parentPos = positionById.get(parentId);
+  const parentNode = nodesById.get(parentId);
   if (!parentPos || !parentNode) return;
 
   const parentCenter = centerOf(parentNode, parentPos);
-
-  const weighted = kidIds.map((id) => ({
-    id,
-    weight: descendantCount(children, id, weightOf),
-  }));
-  const ordered = greedySlotOrder(weighted);
+  const ordered = greedySlotOrder(kidIds.map((id) => ({ id, weight: descendantCount(children, id, weightOf) })));
   const thetas = sectorAngles(n, outboundTheta);
   const closed = outboundTheta == null;
 
@@ -65,12 +70,43 @@ export function layoutPolarTree(args: PolarTreeArgs): void {
     const cx = parentCenter.x + r * Math.cos(theta);
     const cy = parentCenter.y + r * Math.sin(theta);
     positionById.set(kidId, topLeftFromCenter({ x: cx, y: cy }, kidNode.width, kidNode.height));
+  }
+}
 
-    if (isRoot) ringThetas.push(theta);
+/**
+ * Pure polar flower-petal placement: 360° at the root, else a 180° hemisphere
+ * centered on the outbound ray. No Dagre.
+ */
+export function layoutPolarTree(args: PolarTreeArgs): void {
+  const { nodeId, outboundTheta, children, nodesById, positionById, ringThetas, isRoot, spacing, weightOf } = args;
+  const kidIds = children.get(nodeId) ?? [];
+  if (kidIds.length === 0) return;
 
+  placeRadialChildren({
+    parentId: nodeId,
+    outboundTheta,
+    children,
+    nodesById,
+    positionById,
+    spacing,
+    weightOf,
+  });
+
+  const parentPos = positionById.get(nodeId);
+  const parentNode = nodesById.get(nodeId);
+  if (!parentPos || !parentNode) return;
+  const parentCenter = centerOf(parentNode, parentPos);
+
+  for (const kidId of kidIds) {
+    const kidPos = positionById.get(kidId);
+    const kidNode = nodesById.get(kidId);
+    if (!kidPos || !kidNode) continue;
+    const kidCenter = centerOf(kidNode, kidPos);
+    const kidTheta = Math.atan2(kidCenter.y - parentCenter.y, kidCenter.x - parentCenter.x);
+    if (isRoot) ringThetas.push(kidTheta);
     layoutPolarTree({
       nodeId: kidId,
-      outboundTheta: theta,
+      outboundTheta: kidTheta,
       children,
       nodesById,
       positionById,
