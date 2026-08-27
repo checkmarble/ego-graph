@@ -171,11 +171,7 @@ describe('customLayout', () => {
   });
 
   it('picks the next-layer distribution from child-count bands', () => {
-    const bands: NextLayerBand[] = [
-      { upTo: 5, mode: 'dagre' },
-      { upTo: 20, mode: 'radial' },
-      { mode: 'bubble' },
-    ];
+    const bands: NextLayerBand[] = [{ upTo: 5, mode: 'dagre' }, { upTo: 20, mode: 'radial' }, { mode: 'bubble' }];
 
     const graphWithKids = (n: number) => {
       const kids = Array.from({ length: n }, (_, i) => node(`k${i}`));

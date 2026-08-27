@@ -70,19 +70,22 @@ Layer modes:
 | `radial` | polarPetal's ring at the root, hemisphere deeper |
 | `dagre` | one shallow Dagre pocket along the outbound ray |
 | `bubble` | concentric rings so the group stays round |
+| `cloud` | Fibonacci-sized arcs along the outbound ray (next layers only) |
 
 ```ts
 import { customLayout } from 'ego-graph';
 
 customLayout(graph, {
-  firstLayer: { mode: 'bubble' },
+  firstLayer: { mode: 'radial' },
   nextLayers: [
     { upTo: 5, mode: 'dagre' },
     { upTo: 20, mode: 'radial' },
-    { mode: 'bubble' },
+    { mode: 'cloud', threshold: 8 },
   ],
 });
 ```
+
+`cloud` cannot be the first layer — the root has no outbound ray. Each cloud spec has its own `threshold` of `3`, `5`, `8`, `13`, or `21` (default `8`): layer sizes climb the Fibonacci sequence up to that cap, hold, then taper.
 
 `@dagrejs/dagre` is an **optional peer dependency**. It is reachable from
 exactly one module, so importing only `polarPetal` leaves it out of your bundle
@@ -198,7 +201,7 @@ nodes it is spacing.
 | option | default | |
 |---|---|---|
 | `nodeSep` | `80` | gap between siblings inside a Dagre sub-layout |
-| `rankSep` | `100` | gap between ranks inside a Dagre sub-layout |
+| `rankSep` | `100` | gap between ranks inside a Dagre sub-layout, between bubble rings, and between cloud layers |
 | `minRingRadius` | `220` | floor on the first ring, so level-1 clears the root |
 | `ringPadding` | `60` | extra space between adjacent branches |
 | `innerRingCapacity` | `6` | nodes on the innermost bubble ring (1–15). Further rings hold 2×, 3×, … |

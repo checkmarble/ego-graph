@@ -3,6 +3,7 @@ import { computeArcRadius, computeRingRadius, lateralHalfExtent } from '../geome
 import { descendantCount, greedySlotOrder } from '../geometry/order';
 import type { LayoutNode, Point, SpacingOptions } from '../types';
 import { placeBubbleChildren } from './bubble';
+import { placeCloudChildren } from './cloud';
 import { layoutSubtreeLocal } from './dagre-subtree';
 import type { DistributionName } from './layer';
 import { placeRadialChildren } from './polar-subtree';
@@ -17,6 +18,7 @@ export type PlaceDirectChildrenArgs = {
   spacing: Required<SpacingOptions>;
   weightOf: (id: string) => number;
   mode: DistributionName;
+  cloudThreshold?: number;
 };
 
 /** One shallow Dagre pocket along the outbound ray (straight down at the root). */
@@ -97,6 +99,9 @@ export function placeDirectChildren(args: PlaceDirectChildrenArgs): void {
       return;
     case 'bubble':
       placeBubbleChildren(args);
+      return;
+    case 'cloud':
+      placeCloudChildren(args);
       return;
   }
 }

@@ -3,8 +3,8 @@ import { lateralHalfExtentAtAngle } from '../geometry/extents';
 import { resolveOptions } from '../options';
 import { buildChildrenMap, buildSpanningTree } from '../tree';
 import type { EgoGraph, LayoutEdge, LayoutNode, Point, Positions, SpacingOptions } from '../types';
-import type { CustomLayoutOptions, LayerSpec, NextLayersSpec } from './layer';
-import { pickNextLayerSpec, resolveLayerSpec } from './layer';
+import type { CustomLayoutOptions, FirstLayerSpec, NextLayersSpec } from './layer';
+import { pickNextLayerSpec, resolveFirstLayer } from './layer';
 import { type PlaceDirectChildrenArgs, placeDirectChildren } from './place-children';
 import type { PocketStrategy } from './pocket-strategy';
 import { layoutSatellitePockets } from './pockets';
@@ -19,7 +19,7 @@ type WalkArgs = {
   ringThetas: number[];
   spacing: Required<SpacingOptions>;
   weightOf: (id: string) => number;
-  firstLayer: LayerSpec;
+  firstLayer: FirstLayerSpec;
   nextLayers: NextLayersSpec | undefined;
   place: (args: PlaceDirectChildrenArgs) => void;
 };
@@ -36,6 +36,7 @@ function walk(args: WalkArgs): void {
     spacing: args.spacing,
     weightOf: args.weightOf,
     mode: spec.mode,
+    cloudThreshold: spec.mode === 'cloud' ? spec.threshold : undefined,
   });
 
   const parentPos = args.positionById.get(args.nodeId);
@@ -54,10 +55,7 @@ function walk(args: WalkArgs): void {
   }
 }
 
-function composedPocketStrategy(
-  nextLayers: NextLayersSpec | undefined,
-  place: WalkArgs['place'],
-): PocketStrategy {
+function composedPocketStrategy(nextLayers: NextLayersSpec | undefined, place: WalkArgs['place']): PocketStrategy {
   const layoutIsland = (
     rootId: string,
     treeEdges: LayoutEdge[],
@@ -77,7 +75,7 @@ function composedPocketStrategy(
       ringThetas: [],
       spacing,
       weightOf,
-      firstLayer: resolveLayerSpec(undefined, 'radial'),
+      firstLayer: resolveFirstLayer(undefined),
       nextLayers,
       place,
     });
@@ -126,7 +124,7 @@ export function runLayout<N extends LayoutNode = LayoutNode, E extends LayoutEdg
   if (graph.nodes.length === 0) return positionById;
 
   const resolved = resolveOptions(options);
-  const firstLayer = resolveLayerSpec(options.firstLayer, 'radial');
+  const firstLayer = resolveFirstLayer(options.firstLayer);
   const nextLayers = options.nextLayers;
   const nodesById = new Map(graph.nodes.map((n) => [n.id, n]));
   const tree = buildSpanningTree(graph, resolved);
