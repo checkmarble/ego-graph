@@ -2,7 +2,7 @@ import { rankdirFromAngle, sectorAngles } from '../geometry/angles';
 import { computeArcRadius, computeRingRadius, lateralHalfExtent } from '../geometry/extents';
 import { descendantCount, greedySlotOrder } from '../geometry/order';
 import type { LayoutNode, Point, SpacingOptions } from '../types';
-import { placeCloudChildren } from './cloud';
+import { placeBubbleChildren } from './bubble';
 import { layoutSubtreeLocal } from './dagre-subtree';
 import type { DistributionName } from './layer';
 import { placeRadialChildren } from './polar-subtree';
@@ -95,8 +95,8 @@ export function placeDirectChildren(args: PlaceDirectChildrenArgs): void {
     case 'dagre':
       placeDagreChildren(args);
       return;
-    case 'cloud':
-      placeCloudChildren(args);
+    case 'bubble':
+      placeBubbleChildren(args);
       return;
   }
 }

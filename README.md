@@ -69,17 +69,17 @@ Layer modes:
 |---|---|
 | `radial` | polarPetal's ring at the root, hemisphere deeper |
 | `dagre` | one shallow Dagre pocket along the outbound ray |
-| `cloud` | concentric rings so the group stays round |
+| `bubble` | concentric rings so the group stays round |
 
 ```ts
 import { customLayout } from 'ego-graph';
 
 customLayout(graph, {
-  firstLayer: { mode: 'cloud' },
+  firstLayer: { mode: 'bubble' },
   nextLayers: [
     { upTo: 5, mode: 'dagre' },
     { upTo: 20, mode: 'radial' },
-    { mode: 'cloud' },
+    { mode: 'bubble' },
   ],
 });
 ```
@@ -201,7 +201,7 @@ nodes it is spacing.
 | `rankSep` | `100` | gap between ranks inside a Dagre sub-layout |
 | `minRingRadius` | `220` | floor on the first ring, so level-1 clears the root |
 | `ringPadding` | `60` | extra space between adjacent branches |
-| `innerRingCapacity` | `6` | nodes on the innermost cloud ring (1–15). Further rings hold 2×, 3×, … |
+| `innerRingCapacity` | `6` | nodes on the innermost bubble ring (1–15). Further rings hold 2×, 3×, … |
 | `satelliteGap` | `π/3` | satellites within this angle of each other get fanned |
 | `minSatelliteGap` | `π/12` | floor on the gap between fanned satellites |
 

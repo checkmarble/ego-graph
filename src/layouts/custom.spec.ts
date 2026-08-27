@@ -11,7 +11,7 @@ import {
   satellite,
   type TestNode,
 } from '../test-support';
-import { cloudRingCounts } from './cloud';
+import { bubbleRingCounts } from './bubble';
 import { customLayout } from './custom';
 import type { NextLayerBand } from './layer';
 import { polarPetal } from './polar-petal';
@@ -48,13 +48,13 @@ function positionsClose(
   }
 }
 
-describe('cloudRingCounts', () => {
+describe('bubbleRingCounts', () => {
   it('grows T, 2T, 3T until n is filled', () => {
-    expect(cloudRingCounts(4, 6)).toEqual([4]);
-    expect(cloudRingCounts(6, 6)).toEqual([6]);
-    expect(cloudRingCounts(7, 6)).toEqual([6, 1]);
-    expect(cloudRingCounts(12, 4)).toEqual([4, 8]);
-    expect(cloudRingCounts(20, 4)).toEqual([4, 8, 8]);
+    expect(bubbleRingCounts(4, 6)).toEqual([4]);
+    expect(bubbleRingCounts(6, 6)).toEqual([6]);
+    expect(bubbleRingCounts(7, 6)).toEqual([6, 1]);
+    expect(bubbleRingCounts(12, 4)).toEqual([4, 8]);
+    expect(bubbleRingCounts(20, 4)).toEqual([4, 8, 8]);
   });
 });
 
@@ -76,13 +76,13 @@ describe('customLayout', () => {
     );
   });
 
-  it('packs a cloud of first-ring nodes into a round envelope with more than one ring', () => {
+  it('packs a bubble of first-ring nodes into a round envelope with more than one ring', () => {
     const kids = Array.from({ length: 12 }, (_, i) => node(`k${i}`));
     const nodes = [node('root'), ...kids];
     const edges = kids.map((k) => link('root', k.id));
     const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'cloud' },
+      firstLayer: { mode: 'bubble' },
       nextLayers: { mode: 'radial' },
     });
 
@@ -103,13 +103,13 @@ describe('customLayout', () => {
     expect(width / height).toBeLessThan(1.55);
   });
 
-  it('spreads a cloud over more rings when innerRingCapacity is smaller', () => {
+  it('spreads a bubble over more rings when innerRingCapacity is smaller', () => {
     const kids = Array.from({ length: 12 }, (_, i) => node(`k${i}`));
     const nodes = [node('root'), ...kids];
     const edges = kids.map((k) => link('root', k.id));
     const g = graph(nodes, edges, 'root');
     const radiusSpread = (innerRingCapacity: number) => {
-      const positions = customLayout(g, { ...classify, firstLayer: { mode: 'cloud' }, innerRingCapacity });
+      const positions = customLayout(g, { ...classify, firstLayer: { mode: 'bubble' }, innerRingCapacity });
       const radii = kids.map((k) => distance(centerOf(positions, nodes, k.id)));
       return Math.max(...radii) - Math.min(...radii);
     };
@@ -133,25 +133,25 @@ describe('customLayout', () => {
       firstLayer: { mode: 'radial' },
       nextLayers: { mode: 'radial' },
     });
-    const cloudDeeper = customLayout(g, {
+    const bubbleDeeper = customLayout(g, {
       ...classify,
       firstLayer: { mode: 'radial' },
-      nextLayers: { mode: 'cloud' },
+      nextLayers: { mode: 'bubble' },
     });
 
     const a1Radial = centerOf(bothRadial, nodes, 'a1');
-    const a1Cloud = centerOf(cloudDeeper, nodes, 'a1');
-    expect(distance(a1Radial, a1Cloud)).toBeGreaterThan(1);
+    const a1Bubble = centerOf(bubbleDeeper, nodes, 'a1');
+    expect(distance(a1Radial, a1Bubble)).toBeGreaterThan(1);
 
     const rootKids = ['a', 'b', 'c'].map((id) => centerOf(bothRadial, nodes, id));
-    const rootKidsCloud = ['a', 'b', 'c'].map((id) => centerOf(cloudDeeper, nodes, id));
+    const rootKidsBubble = ['a', 'b', 'c'].map((id) => centerOf(bubbleDeeper, nodes, id));
     for (let i = 0; i < 3; i++) {
-      expect(rootKids[i]!.x).toBeCloseTo(rootKidsCloud[i]!.x, 5);
-      expect(rootKids[i]!.y).toBeCloseTo(rootKidsCloud[i]!.y, 5);
+      expect(rootKids[i]!.x).toBeCloseTo(rootKidsBubble[i]!.x, 5);
+      expect(rootKids[i]!.y).toBeCloseTo(rootKidsBubble[i]!.y, 5);
     }
   });
 
-  it('places every node once for dagre-then-cloud without overlaps', () => {
+  it('places every node once for dagre-then-bubble without overlaps', () => {
     const nodes = [node('root'), node('a'), node('b'), node('c'), node('d'), node('e'), satellite('sat')];
     const edges = [
       link('root', 'a'),
@@ -164,7 +164,7 @@ describe('customLayout', () => {
     const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
       firstLayer: { mode: 'dagre' },
-      nextLayers: { mode: 'cloud' },
+      nextLayers: { mode: 'bubble' },
     });
     expect(positions.size).toBe(nodes.length);
     expectNoOverlaps(nodes, positions);
@@ -174,7 +174,7 @@ describe('customLayout', () => {
     const bands: NextLayerBand[] = [
       { upTo: 5, mode: 'dagre' },
       { upTo: 20, mode: 'radial' },
-      { mode: 'cloud' },
+      { mode: 'bubble' },
     ];
 
     const graphWithKids = (n: number) => {
@@ -184,7 +184,7 @@ describe('customLayout', () => {
       return graph(nodes, edges, 'root');
     };
 
-    const assertMatches = (n: number, mode: 'dagre' | 'radial' | 'cloud') => {
+    const assertMatches = (n: number, mode: 'dagre' | 'radial' | 'bubble') => {
       const g = graphWithKids(n);
       const banded = customLayout(g, { ...classify, firstLayer: { mode: 'radial' }, nextLayers: bands });
       const expected = customLayout(g, { ...classify, firstLayer: { mode: 'radial' }, nextLayers: { mode } });
@@ -197,6 +197,6 @@ describe('customLayout', () => {
 
     assertMatches(3, 'dagre');
     assertMatches(12, 'radial');
-    assertMatches(24, 'cloud');
+    assertMatches(24, 'bubble');
   });
 });

@@ -58,7 +58,7 @@ export type SpacingOptions = {
   /** Extra space between adjacent subtrees' lateral extents. */
   ringPadding?: number;
   /**
-   * Nodes on the innermost cloud ring. Further rings hold 2×, 3×, … that many.
+   * Nodes on the innermost bubble ring. Further rings hold 2×, 3×, … that many.
    * Clamped to 1–15.
    */
   innerRingCapacity?: number;

@@ -1,7 +1,7 @@
 import type { LayoutEdge, LayoutNode, LayoutOptions } from '../types';
 
 /** How a parent places its children. */
-export const DISTRIBUTION_NAMES = ['radial', 'dagre', 'cloud'] as const;
+export const DISTRIBUTION_NAMES = ['radial', 'dagre', 'bubble'] as const;
 
 export type DistributionName = (typeof DISTRIBUTION_NAMES)[number];
 
@@ -12,7 +12,7 @@ const OPEN_BAND = Number.POSITIVE_INFINITY;
  *
  * `radial` is polarPetal's ring / hemisphere.
  * `dagre` is a shallow Dagre pocket along the outbound ray.
- * `cloud` packs children into concentric rings so the group stays round.
+ * `bubble` packs children into concentric rings so the group stays round.
  */
 export type LayerSpec = {
   mode: DistributionName;

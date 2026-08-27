@@ -4,7 +4,7 @@ import { computeRingRadius } from '../geometry/extents';
 import { descendantCount, greedySlotOrder } from '../geometry/order';
 import type { LayoutNode, Point, SpacingOptions } from '../types';
 
-export type PlaceCloudArgs = {
+export type PlaceBubbleArgs = {
   parentId: string;
   outboundTheta: number | null;
   children: Map<string, string[]>;
@@ -15,7 +15,7 @@ export type PlaceCloudArgs = {
 };
 
 /** Split `n` nodes into rings whose capacities grow  T, 2T, 3T, … so the envelope stays round. */
-export function cloudRingCounts(n: number, threshold: number): number[] {
+export function bubbleRingCounts(n: number, threshold: number): number[] {
   const t = Math.max(1, Math.floor(threshold));
   const rings: number[] = [];
   let left = n;
@@ -31,7 +31,7 @@ export function cloudRingCounts(n: number, threshold: number): number[] {
 }
 
 function splitRings(ordered: string[], threshold: number): string[][] {
-  const counts = cloudRingCounts(ordered.length, threshold);
+  const counts = bubbleRingCounts(ordered.length, threshold);
   const rings: string[][] = [];
   let offset = 0;
   for (const count of counts) {
@@ -45,7 +45,7 @@ function splitRings(ordered: string[], threshold: number): string[][] {
  * Pack direct children into concentric rings around a local origin, then sit
  * that disk on the parent (root) or in front of it along the outbound ray.
  */
-export function placeCloudChildren(args: PlaceCloudArgs): void {
+export function placeBubbleChildren(args: PlaceBubbleArgs): void {
   const { parentId, outboundTheta, children, nodesById, positionById, spacing, weightOf } = args;
   const kidIds = children.get(parentId) ?? [];
   if (kidIds.length === 0) return;
@@ -92,16 +92,16 @@ export function placeCloudChildren(args: PlaceCloudArgs): void {
 
   let origin = parentCenter;
   if (outboundTheta != null) {
-    let cloudRadius = 0;
+    let bubbleRadius = 0;
     for (const kidId of ordered) {
       const pos = local.get(kidId);
       const kidNode = nodesById.get(kidId);
       if (!pos || !kidNode) continue;
       const c = centerOf(kidNode, pos);
-      cloudRadius = Math.max(cloudRadius, Math.hypot(c.x, c.y) + Math.hypot(kidNode.width / 2, kidNode.height / 2));
+      bubbleRadius = Math.max(bubbleRadius, Math.hypot(c.x, c.y) + Math.hypot(kidNode.width / 2, kidNode.height / 2));
     }
     const parentClear =
-      aabbHalfRadial(parentNode.width, parentNode.height, outboundTheta) + spacing.ringPadding + cloudRadius;
+      aabbHalfRadial(parentNode.width, parentNode.height, outboundTheta) + spacing.ringPadding + bubbleRadius;
     origin = {
       x: parentCenter.x + parentClear * Math.cos(outboundTheta),
       y: parentCenter.y + parentClear * Math.sin(outboundTheta),
