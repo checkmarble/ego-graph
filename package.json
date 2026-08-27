@@ -1,6 +1,6 @@
 {
   "name": "ego-graph",
-  "version": "0.1.3",
+  "version": "0.3.0",
   "description": "Radial ego-network layouts with branch folding, for React Flow and anything else",
   "keywords": [
     "graph",
