@@ -44,6 +44,12 @@ round. The inner ring holds `threshold` nodes; each further ring holds one more
 multiple of that. At the root the disk is centred on the ego; deeper, it sits
 in front of the parent along the outbound ray.
 
+**Cloud** — direct children packed into arcs along the outbound ray (the
+direction from grandparent through parent). Layer sizes climb the Fibonacci
+sequence from 1 up to a threshold of 3, 5, 8, 13, or 21, hold at that cap, then
+taper. The start node cannot use it: there is no grandparent, so no ray. Deeper
+parents only.
+
 **Pocket** — the angular region allotted to one satellite and the island hanging
 off it, on an arc outside everything the tree placed.
 

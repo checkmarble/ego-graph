@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { pickNextLayerSpec, resolveNextLayers } from './layer';
+import { pickNextLayerSpec, resolveFirstLayer, resolveNextLayers } from './layer';
 
-const BANDS = [
-  { upTo: 5, mode: 'dagre' },
-  { upTo: 20, mode: 'radial' },
-  { mode: 'bubble' },
-] as const;
+const BANDS = [{ upTo: 5, mode: 'dagre' }, { upTo: 20, mode: 'radial' }, { mode: 'bubble' }] as const;
 
 describe('pickNextLayerSpec', () => {
   it('uses dagre through 5, radial through 20, then bubble', () => {
@@ -34,5 +30,22 @@ describe('pickNextLayerSpec', () => {
   it('defaults to radial when nextLayers is omitted', () => {
     expect(pickNextLayerSpec(8, undefined)).toEqual({ mode: 'radial' });
     expect(resolveNextLayers(undefined)).toEqual([{ mode: 'radial' }]);
+  });
+
+  it('keeps the cloud threshold from the matching band', () => {
+    expect(
+      pickNextLayerSpec(30, [
+        { upTo: 5, mode: 'dagre' },
+        { mode: 'cloud', threshold: 13 },
+      ]),
+    ).toEqual({ mode: 'cloud', threshold: 13 });
+  });
+});
+
+describe('resolveFirstLayer', () => {
+  it('falls back to radial when the spec is missing or cloud', () => {
+    expect(resolveFirstLayer(undefined)).toEqual({ mode: 'radial' });
+    expect(resolveFirstLayer({ mode: 'cloud' })).toEqual({ mode: 'radial' });
+    expect(resolveFirstLayer({ mode: 'bubble' })).toEqual({ mode: 'bubble' });
   });
 });
