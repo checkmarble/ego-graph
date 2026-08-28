@@ -28,7 +28,9 @@ export type LayerSpec = FirstLayerSpec | CloudLayerSpec;
  * Omit `upTo` on the last band to catch everything remaining.
  */
 export type FirstLayerBand = FirstLayerSpec & { upTo?: number };
-export type FirstLayersSpec = readonly FirstLayerBand[];
+
+/** A single spec applies to every child count; an array of bands picks from the root's fan-out. */
+export type FirstLayersSpec = FirstLayerSpec | readonly FirstLayerBand[];
 
 /**
  * A next-layer band: use this spec while a parent has at most `upTo` children.
@@ -42,7 +44,11 @@ export type CustomLayoutOptions<N extends LayoutNode = LayoutNode, E extends Lay
   N,
   E
 > & {
-  /** Root's children as count bands. Default: `[{ mode: 'radial' }]`. Cannot include `cloud`. */
+  /**
+   * Root's children. A single spec applies to all child counts; an array of
+   * bands picks a spec from the root's direct-child count. Default: radial.
+   * Cannot include `cloud`.
+   */
   firstLayer?: FirstLayersSpec;
   /**
    * Every deeper parent. A single spec applies to all child counts; an array of
@@ -88,28 +94,30 @@ function specNeedsDagre(spec: { mode?: string; sectorThreshold?: number } | unde
 export function optionsNeedDagre<N extends LayoutNode, E extends LayoutEdge>(
   options: CustomLayoutOptions<N, E>,
 ): boolean {
-  if (options.firstLayer != null && options.firstLayer.some(specNeedsDagre)) return true;
-  const next = options.nextLayers;
-  if (next == null) return false;
-  if (isBandList(next)) return next.some(specNeedsDagre);
-  return specNeedsDagre(next);
+  if (specListNeedsDagre(options.firstLayer)) return true;
+  return specListNeedsDagre(options.nextLayers);
+}
+
+function specListNeedsDagre(spec: FirstLayersSpec | NextLayersSpec | undefined): boolean {
+  if (spec == null) return false;
+  if (isBandList(spec)) return spec.some(specNeedsDagre);
+  return specNeedsDagre(spec);
 }
 
 /**
- * `undefined` → `[{ mode: 'radial' }]`. Empty, a non-array, or any `cloud`
- * band throws.
+ * `undefined` or `[]` → `[{ mode: 'radial' }]`. A single spec becomes a
+ * catch-all band. Any `cloud` entry throws.
  */
 export function resolveFirstLayers(spec: FirstLayersSpec | undefined): FirstLayerBand[] {
   if (spec == null) return [{ mode: 'radial' }];
-  if (!Array.isArray(spec) || spec.length === 0) {
-    throw new Error('firstLayer must be a non-empty array of bands');
-  }
-  for (const band of spec) {
-    if (band.mode === 'cloud') {
+  const bands: FirstLayerBand[] = isBandList(spec) ? [...spec] : [spec];
+  if (bands.length === 0) return [{ mode: 'radial' }];
+  for (const band of bands) {
+    if (!isFirstLayerMode(band.mode)) {
       throw new Error('cloud cannot be a first-layer mode: the root has no outbound ray');
     }
   }
-  return [...spec];
+  return bands;
 }
 
 export function resolveLayerSpec(spec: LayerSpec | undefined, fallbackMode: FirstLayerMode = 'radial'): LayerSpec {
@@ -126,7 +134,7 @@ export function resolveNextLayers(
   return [...spec];
 }
 
-function isBandList(spec: NextLayersSpec): spec is readonly NextLayerBand[] {
+function isBandList(spec: FirstLayersSpec | NextLayersSpec): spec is readonly FirstLayerBand[] | readonly NextLayerBand[] {
   return Array.isArray(spec);
 }
 
@@ -145,11 +153,14 @@ export function pickNextLayerSpec(
   return resolveLayerSpec(spec, fallbackMode);
 }
 
-/** Picks a first-layer spec from count bands. `cloud` is not a legal match. */
-export function pickFirstLayerSpec(childCount: number, bands: FirstLayersSpec): FirstLayerSpec {
-  const spec = pickFromBands(childCount, bands);
-  if (spec.mode === 'cloud') {
+/**
+ * A single `FirstLayerSpec` applies to every child count. An array of bands
+ * picks the spec from `childCount`. `cloud` is not a legal match.
+ */
+export function pickFirstLayerSpec(childCount: number, spec: FirstLayersSpec | undefined): FirstLayerSpec {
+  const picked = pickFromBands(childCount, resolveFirstLayers(spec));
+  if (picked.mode === 'cloud') {
     throw new Error('cloud cannot be a first-layer mode: the root has no outbound ray');
   }
-  return spec;
+  return picked;
 }

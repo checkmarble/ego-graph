@@ -212,7 +212,7 @@ describe('customLayout', () => {
     const assertMatches = (n: number, mode: 'dagre' | 'radial' | 'bubble') => {
       const g = graphWithKids(n);
       const banded = dagreLayout(g, { ...classify, firstLayer: bands });
-      const expected = dagreLayout(g, { ...classify, firstLayer: [{ mode }] });
+      const expected = dagreLayout(g, { ...classify, firstLayer: { mode } });
       positionsClose(
         banded,
         expected,

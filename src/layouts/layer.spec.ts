@@ -50,16 +50,20 @@ describe('pickNextLayerSpec', () => {
 });
 
 describe('resolveFirstLayers', () => {
-  it('defaults to a radial catch-all when omitted', () => {
+  it('defaults to a radial catch-all when omitted or empty', () => {
     expect(resolveFirstLayers(undefined)).toEqual([{ mode: 'radial' }]);
+    expect(resolveFirstLayers([])).toEqual([{ mode: 'radial' }]);
   });
 
-  it('throws on an empty array or a non-array', () => {
-    expect(() => resolveFirstLayers([])).toThrow(/non-empty array/);
-    expect(() => resolveFirstLayers({ mode: 'radial' } as never)).toThrow(/non-empty array/);
+  it('wraps a single spec as a catch-all band', () => {
+    expect(resolveFirstLayers({ mode: 'radial' })).toEqual([{ mode: 'radial' }]);
+    expect(resolveFirstLayers({ mode: 'dagre', sectorThreshold: 5 })).toEqual([
+      { mode: 'dagre', sectorThreshold: 5 },
+    ]);
   });
 
   it('throws when a band is cloud', () => {
+    expect(() => resolveFirstLayers({ mode: 'cloud' } as never)).toThrow(/outbound ray/);
     expect(() => resolveFirstLayers([{ mode: 'cloud' } as never])).toThrow(/outbound ray/);
   });
 });
@@ -71,6 +75,11 @@ describe('pickFirstLayerSpec', () => {
     expect(pickFirstLayerSpec(6, BANDS)).toEqual({ mode: 'radial' });
     expect(pickFirstLayerSpec(20, BANDS)).toEqual({ mode: 'radial' });
     expect(pickFirstLayerSpec(21, BANDS)).toEqual({ mode: 'bubble' });
+  });
+
+  it('treats a single spec as a catch-all band', () => {
+    expect(pickFirstLayerSpec(3, { mode: 'bubble' })).toEqual({ mode: 'bubble' });
+    expect(pickFirstLayerSpec(40, { mode: 'bubble' })).toEqual({ mode: 'bubble' });
   });
 
   it('preserves sectorThreshold on a matching dagre band', () => {
