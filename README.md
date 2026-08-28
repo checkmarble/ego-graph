@@ -43,7 +43,7 @@ import { applyPositions, retargetHandles, toLayoutGraph } from 'ego-graph/react-
 
 const graph = toLayoutGraph(nodes, edges, 'customer-42');
 const positions = customLayout(graph, {
-  firstLayer: [{ mode: 'radial' }],
+  firstLayer: { mode: 'radial' },
   nextLayers: { mode: 'radial' },
 });
 
@@ -59,8 +59,8 @@ functions and does not import React either.
 ## Layouts
 
 `customLayout` picks how **the first ring** and **every deeper parent** place their
-direct children. `firstLayer` is always an array of count bands. `nextLayers` may
-be one spec, or a ladder of bands keyed by direct-child count.
+direct children. `firstLayer` and `nextLayers` each take one spec, or a ladder of
+bands keyed by direct-child count.
 
 | mode | |
 |---|---|
@@ -91,22 +91,22 @@ customLayout(graph, {
 
 `dagre` may set `sectorThreshold` (for example `5`): below that many children, one pocket; at or above, `ceil(n / threshold)` radial sectors of shallow pockets.
 
-Omit `firstLayer` and it defaults to `[{ mode: 'radial' }]`.
+Omit `firstLayer` and it defaults to `{ mode: 'radial' }`.
 
 Former named presets as specs (Dagre ones need `ego-graph/dagre`):
 
 ```ts
 // radial then radial
-customLayout(graph, { firstLayer: [{ mode: 'radial' }], nextLayers: { mode: 'radial' } });
+customLayout(graph, { firstLayer: { mode: 'radial' }, nextLayers: { mode: 'radial' } });
 
 // sectored Dagre
 customLayout(graph, {
-  firstLayer: [{ mode: 'dagre', sectorThreshold: 5 }],
+  firstLayer: { mode: 'dagre', sectorThreshold: 5 },
   nextLayers: { mode: 'dagre', sectorThreshold: 5 },
 });
 
 // a ring of Dagre branches
-customLayout(graph, { firstLayer: [{ mode: 'radial' }], nextLayers: { mode: 'dagreSubtree' } });
+customLayout(graph, { firstLayer: { mode: 'radial' }, nextLayers: { mode: 'dagreSubtree' } });
 ```
 
 `@dagrejs/dagre` is an **optional peer dependency**. It is reachable from
@@ -172,7 +172,7 @@ function AutoLayout({ nodes, edges, root }) {
   useEffect(() => {
     if (!nodesInitialized) return;
     const positions = customLayout(toLayoutGraph(nodes, edges, root), {
-      firstLayer: [{ mode: 'radial' }],
+      firstLayer: { mode: 'radial' },
       nextLayers: { mode: 'radial' },
     });
     const laidOut = applyPositions(nodes, positions);

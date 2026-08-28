@@ -3,7 +3,7 @@ import { lateralHalfExtentAtAngle } from '../geometry/extents';
 import { resolveOptions } from '../options';
 import { buildChildrenMap, buildSpanningTree } from '../tree';
 import type { EgoGraph, LayoutEdge, LayoutNode, Point, Positions, SpacingOptions } from '../types';
-import type { CustomLayoutOptions, FirstLayersSpec, LayerSpec, NextLayersSpec } from './layer';
+import type { CustomLayoutOptions, FirstLayerBand, LayerSpec, NextLayersSpec } from './layer';
 import { DAGRE_ENTRY_HINT, optionsNeedDagre, pickFirstLayerSpec, pickNextLayerSpec, resolveFirstLayers } from './layer';
 import { type PlaceDirectChildrenArgs, placeLightChildren } from './place-children';
 import type { PocketStrategy } from './pocket-strategy';
@@ -19,7 +19,7 @@ type WalkArgs = {
   ringThetas: number[];
   spacing: Required<SpacingOptions>;
   weightOf: (id: string) => number;
-  firstLayer: FirstLayersSpec;
+  firstLayer: FirstLayerBand[];
   nextLayers: NextLayersSpec | undefined;
   place: (args: PlaceDirectChildrenArgs) => void;
 };
