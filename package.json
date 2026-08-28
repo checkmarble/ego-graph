@@ -1,6 +1,6 @@
 {
   "name": "ego-graph",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Radial ego-network layouts with branch folding, for React Flow and anything else",
   "keywords": [
     "graph",
@@ -57,6 +57,10 @@
       "types": "./dist/react-flow.d.mts",
       "import": "./dist/react-flow.mjs"
     },
+    "./dagre": {
+      "types": "./dist/dagre.d.mts",
+      "import": "./dist/dagre.mjs"
+    },
     "./package.json": "./package.json"
   },
   "typesVersions": {
@@ -66,6 +70,9 @@
       ],
       "react-flow": [
         "./dist/react-flow.d.mts"
+      ],
+      "dagre": [
+        "./dist/dagre.d.mts"
       ]
     }
   },

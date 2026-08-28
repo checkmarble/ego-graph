@@ -7,9 +7,8 @@ import { placeSubtreeAt } from './place';
 import type { PocketStrategy } from './pocket-strategy';
 
 /**
- * The one place `@dagrejs/dagre` is imported. Anything that does not reach this
- * module does not pull Dagre into the bundle — which is the whole reason
- * `polarPetal` can be used dependency-free.
+ * The one place `@dagrejs/dagre` is imported. Radial, bubble, and cloud never
+ * reach this module, so the main `ego-graph` entry stays Dagre-free.
  */
 export function layoutSubtreeLocal(
   subtreeIds: string[],

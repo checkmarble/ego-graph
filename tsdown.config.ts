@@ -7,6 +7,7 @@ export default defineConfig({
     index: 'src/index.ts',
     fold: 'src/fold/index.ts',
     'react-flow': 'src/react-flow/index.ts',
+    dagre: 'src/dagre.ts',
   },
   // ESM only. Every consumer of a React Flow layout is running a bundler, and
   // dual-publishing buys compatibility nobody here needs at the cost of the
@@ -15,7 +16,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   treeshake: true,
-  // The one optional peer. Bundling it would defeat the point of keeping
-  // polarPetal dependency-free.
+  // The one optional peer. Bundling it would defeat the Dagre-free main entry.
   deps: { neverBundle: ['@dagrejs/dagre'] },
 });

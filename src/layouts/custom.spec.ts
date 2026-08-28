@@ -13,8 +13,8 @@ import {
 } from '../test-support';
 import { bubbleRingCounts } from './bubble';
 import { customLayout } from './custom';
-import type { NextLayerBand } from './layer';
-import { polarPetal } from './polar-petal';
+import { customLayout as dagreLayout } from './custom-dagre';
+import { DAGRE_ENTRY_HINT, type FirstLayerBand, type NextLayerBand } from './layer';
 
 function expectNoOverlaps(nodes: TestNode[], positions: Map<string, { x: number; y: number }>): void {
   const placed = nodes.map((n) => ({ id: n.id, pos: positions.get(n.id)!, node: n })).filter((p) => p.pos);
@@ -59,21 +59,24 @@ describe('bubbleRingCounts', () => {
 });
 
 describe('customLayout', () => {
-  it('matches polarPetal when both layers are radial', () => {
+  it('places a radial-then-radial graph with a satellite', () => {
     const nodes = [node('root'), node('a'), node('b'), node('c'), node('d'), satellite('sat')];
     const edges = [link('root', 'a'), link('root', 'b'), link('a', 'c'), link('b', 'd'), match('sat', 'c')];
-    const g = graph(nodes, edges, 'root');
-    const preset = polarPetal(g, classify);
-    const custom = customLayout(g, {
+    const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'radial' },
+      firstLayer: [{ mode: 'radial' }],
       nextLayers: { mode: 'radial' },
     });
-    positionsClose(
-      preset,
-      custom,
-      nodes.map((n) => n.id),
-    );
+    expect(positions.size).toBe(nodes.length);
+    expectNoOverlaps(nodes, positions);
+    expect(distance(centerOf(positions, nodes, 'root'))).toBeLessThan(1e-6);
+  });
+
+  it('throws when a Dagre mode is used without the dagre entry', () => {
+    const nodes = [node('root'), node('a')];
+    const g = graph(nodes, [link('root', 'a')], 'root');
+    expect(() => customLayout(g, { ...classify, firstLayer: [{ mode: 'dagre' }] })).toThrow(DAGRE_ENTRY_HINT);
+    expect(() => customLayout(g, { ...classify, nextLayers: { mode: 'dagreSubtree' } })).toThrow(DAGRE_ENTRY_HINT);
   });
 
   it('packs a bubble of first-ring nodes into a round envelope with more than one ring', () => {
@@ -82,7 +85,7 @@ describe('customLayout', () => {
     const edges = kids.map((k) => link('root', k.id));
     const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'bubble' },
+      firstLayer: [{ mode: 'bubble' }],
       nextLayers: { mode: 'radial' },
     });
 
@@ -109,7 +112,7 @@ describe('customLayout', () => {
     const edges = kids.map((k) => link('root', k.id));
     const g = graph(nodes, edges, 'root');
     const radiusSpread = (innerRingCapacity: number) => {
-      const positions = customLayout(g, { ...classify, firstLayer: { mode: 'bubble' }, innerRingCapacity });
+      const positions = customLayout(g, { ...classify, firstLayer: [{ mode: 'bubble' }], innerRingCapacity });
       const radii = kids.map((k) => distance(centerOf(positions, nodes, k.id)));
       return Math.max(...radii) - Math.min(...radii);
     };
@@ -130,12 +133,12 @@ describe('customLayout', () => {
 
     const bothRadial = customLayout(g, {
       ...classify,
-      firstLayer: { mode: 'radial' },
+      firstLayer: [{ mode: 'radial' }],
       nextLayers: { mode: 'radial' },
     });
     const bubbleDeeper = customLayout(g, {
       ...classify,
-      firstLayer: { mode: 'radial' },
+      firstLayer: [{ mode: 'radial' }],
       nextLayers: { mode: 'bubble' },
     });
 
@@ -161,9 +164,9 @@ describe('customLayout', () => {
       link('b', 'e'),
       match('sat', 'd'),
     ];
-    const positions = customLayout(graph(nodes, edges, 'root'), {
+    const positions = dagreLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'dagre' },
+      firstLayer: [{ mode: 'dagre' }],
       nextLayers: { mode: 'bubble' },
     });
     expect(positions.size).toBe(nodes.length);
@@ -182,8 +185,34 @@ describe('customLayout', () => {
 
     const assertMatches = (n: number, mode: 'dagre' | 'radial' | 'bubble') => {
       const g = graphWithKids(n);
-      const banded = customLayout(g, { ...classify, firstLayer: { mode: 'radial' }, nextLayers: bands });
-      const expected = customLayout(g, { ...classify, firstLayer: { mode: 'radial' }, nextLayers: { mode } });
+      const banded = dagreLayout(g, { ...classify, firstLayer: [{ mode: 'radial' }], nextLayers: bands });
+      const expected = dagreLayout(g, { ...classify, firstLayer: [{ mode: 'radial' }], nextLayers: { mode } });
+      positionsClose(
+        banded,
+        expected,
+        g.nodes.map((n) => n.id),
+      );
+    };
+
+    assertMatches(3, 'dagre');
+    assertMatches(12, 'radial');
+    assertMatches(24, 'bubble');
+  });
+
+  it('picks the first-layer distribution from child-count bands', () => {
+    const bands: FirstLayerBand[] = [{ upTo: 5, mode: 'dagre' }, { upTo: 20, mode: 'radial' }, { mode: 'bubble' }];
+
+    const graphWithKids = (n: number) => {
+      const kids = Array.from({ length: n }, (_, i) => node(`k${i}`));
+      const nodes = [node('root'), ...kids];
+      const edges = kids.map((kid) => link('root', kid.id));
+      return graph(nodes, edges, 'root');
+    };
+
+    const assertMatches = (n: number, mode: 'dagre' | 'radial' | 'bubble') => {
+      const g = graphWithKids(n);
+      const banded = dagreLayout(g, { ...classify, firstLayer: bands });
+      const expected = dagreLayout(g, { ...classify, firstLayer: [{ mode }] });
       positionsClose(
         banded,
         expected,

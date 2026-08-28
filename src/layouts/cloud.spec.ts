@@ -54,7 +54,7 @@ describe('placeCloudChildren', () => {
     const edges = [link('root', 'a'), ...kids.map((kid) => link('a', kid.id))];
     const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'radial' },
+      firstLayer: [{ mode: 'radial' }],
       nextLayers: { mode: 'cloud', threshold: 8 },
     });
 
@@ -75,7 +75,7 @@ describe('placeCloudChildren', () => {
     const edges = [link('root', 'a'), ...kids.map((kid) => link('a', kid.id)), link('k0', 'g0')];
     const positions = customLayout(graph(nodes, edges, 'root'), {
       ...classify,
-      firstLayer: { mode: 'radial' },
+      firstLayer: [{ mode: 'radial' }],
       nextLayers: { mode: 'cloud', threshold: 8 },
     });
 
