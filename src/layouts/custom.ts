@@ -3,9 +3,9 @@ import { lateralHalfExtentAtAngle } from '../geometry/extents';
 import { resolveOptions } from '../options';
 import { buildChildrenMap, buildSpanningTree } from '../tree';
 import type { EgoGraph, LayoutEdge, LayoutNode, Point, Positions, SpacingOptions } from '../types';
-import type { CustomLayoutOptions, FirstLayerSpec, NextLayersSpec } from './layer';
-import { pickNextLayerSpec, resolveFirstLayer } from './layer';
-import { type PlaceDirectChildrenArgs, placeDirectChildren } from './place-children';
+import type { CustomLayoutOptions, FirstLayersSpec, LayerSpec, NextLayersSpec } from './layer';
+import { DAGRE_ENTRY_HINT, optionsNeedDagre, pickFirstLayerSpec, pickNextLayerSpec, resolveFirstLayers } from './layer';
+import { type PlaceDirectChildrenArgs, placeLightChildren } from './place-children';
 import type { PocketStrategy } from './pocket-strategy';
 import { layoutSatellitePockets } from './pockets';
 
@@ -19,15 +19,13 @@ type WalkArgs = {
   ringThetas: number[];
   spacing: Required<SpacingOptions>;
   weightOf: (id: string) => number;
-  firstLayer: FirstLayerSpec;
+  firstLayer: FirstLayersSpec;
   nextLayers: NextLayersSpec | undefined;
   place: (args: PlaceDirectChildrenArgs) => void;
 };
 
-function walk(args: WalkArgs): void {
-  const kidCount = args.children.get(args.nodeId)?.length ?? 0;
-  const spec = args.isRoot ? args.firstLayer : pickNextLayerSpec(kidCount, args.nextLayers);
-  args.place({
+function placeArgs(spec: LayerSpec, args: WalkArgs): PlaceDirectChildrenArgs {
+  return {
     parentId: args.nodeId,
     outboundTheta: args.outboundTheta,
     children: args.children,
@@ -37,14 +35,37 @@ function walk(args: WalkArgs): void {
     weightOf: args.weightOf,
     mode: spec.mode,
     cloudThreshold: spec.mode === 'cloud' ? spec.threshold : undefined,
-  });
+    sectorThreshold: spec.mode === 'dagre' ? spec.sectorThreshold : undefined,
+  };
+}
+
+function walk(args: WalkArgs): void {
+  const kidCount = args.children.get(args.nodeId)?.length ?? 0;
+  const spec = args.isRoot
+    ? pickFirstLayerSpec(kidCount, args.firstLayer)
+    : pickNextLayerSpec(kidCount, args.nextLayers);
+  args.place(placeArgs(spec, args));
 
   const parentPos = args.positionById.get(args.nodeId);
   const parentNode = args.nodesById.get(args.nodeId);
   if (!parentPos || !parentNode) return;
   const parentCenter = centerOf(parentNode, parentPos);
 
-  for (const kidId of args.children.get(args.nodeId) ?? []) {
+  const kidIds = args.children.get(args.nodeId) ?? [];
+  if (spec.mode === 'dagreSubtree') {
+    if (args.isRoot) {
+      for (const kidId of kidIds) {
+        const kidPos = args.positionById.get(kidId);
+        const kidNode = args.nodesById.get(kidId);
+        if (!kidPos || !kidNode) continue;
+        const kidCenter = centerOf(kidNode, kidPos);
+        args.ringThetas.push(Math.atan2(kidCenter.y - parentCenter.y, kidCenter.x - parentCenter.x));
+      }
+    }
+    return;
+  }
+
+  for (const kidId of kidIds) {
     const kidPos = args.positionById.get(kidId);
     const kidNode = args.nodesById.get(kidId);
     if (!kidPos || !kidNode) continue;
@@ -75,7 +96,7 @@ function composedPocketStrategy(nextLayers: NextLayersSpec | undefined, place: W
       ringThetas: [],
       spacing,
       weightOf,
-      firstLayer: resolveFirstLayer(undefined),
+      firstLayer: [{ mode: 'radial' }],
       nextLayers,
       place,
     });
@@ -103,18 +124,18 @@ function composedPocketStrategy(nextLayers: NextLayersSpec | undefined, place: W
 }
 
 /**
- * Compose a layout from a first-layer spec and next-layer bands. `polarPetal`
- * is radial then radial. First-layer dagre is a shallow pocket; deeper dagre is
- * the same, one parent at a time.
+ * Compose a layout from first-layer bands and next-layer bands. Radial, bubble,
+ * and cloud only — Dagre modes need `ego-graph/dagre`.
  */
 export function customLayout<N extends LayoutNode = LayoutNode, E extends LayoutEdge = LayoutEdge>(
   graph: EgoGraph<N, E>,
   options: CustomLayoutOptions<N, E> = {},
 ): Positions {
-  return runLayout(graph, options, placeDirectChildren);
+  if (optionsNeedDagre(options)) throw new Error(DAGRE_ENTRY_HINT);
+  return runLayout(graph, options, placeLightChildren);
 }
 
-/** Shared walk used by `customLayout` and `sectoredDagre`. */
+/** Shared walk used by the Dagre-free and Dagre-capable `customLayout` entries. */
 export function runLayout<N extends LayoutNode = LayoutNode, E extends LayoutEdge = LayoutEdge>(
   graph: EgoGraph<N, E>,
   options: CustomLayoutOptions<N, E>,
@@ -124,7 +145,7 @@ export function runLayout<N extends LayoutNode = LayoutNode, E extends LayoutEdg
   if (graph.nodes.length === 0) return positionById;
 
   const resolved = resolveOptions(options);
-  const firstLayer = resolveFirstLayer(options.firstLayer);
+  const firstLayer = resolveFirstLayers(options.firstLayer);
   const nextLayers = options.nextLayers;
   const nodesById = new Map(graph.nodes.map((n) => [n.id, n]));
   const tree = buildSpanningTree(graph, resolved);

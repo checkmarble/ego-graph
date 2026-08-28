@@ -16,7 +16,7 @@ in the middle with its neighbourhood arranged around it.
 
 ## Documentation
 
-Full documentation and examples [Full documentation and examples](https://ego-graph-documentation.vercel.app/)
+[Full documentation and examples](https://ego-graph-documentation.vercel.app/)
 
 ![full react flow example with source](./docs/full-react-flow-example.png)
 
@@ -27,20 +27,25 @@ npm install ego-graph
 ```
 
 Zero dependencies. `@dagrejs/dagre` is an **optional** peer — install it only if
-you use `radialDagre` or `sectoredDagre`:
+you use `dagre`, `dagreSubtree`, or `sectorThreshold`:
 
 ```sh
 npm install ego-graph @dagrejs/dagre
 ```
 
+Then import from `ego-graph/dagre`. The main entry never reaches Dagre.
+
 ## Quick start
 
 ```ts
-import { radialDagre } from 'ego-graph';
+import { customLayout } from 'ego-graph';
 import { applyPositions, retargetHandles, toLayoutGraph } from 'ego-graph/react-flow';
 
 const graph = toLayoutGraph(nodes, edges, 'customer-42');
-const positions = radialDagre(graph);
+const positions = customLayout(graph, {
+  firstLayer: [{ mode: 'radial' }],
+  nextLayers: { mode: 'radial' },
+});
 
 const laidOut = applyPositions(nodes, positions);
 const rewired = retargetHandles(laidOut, edges);
@@ -54,29 +59,26 @@ functions and does not import React either.
 ## Layouts
 
 `customLayout` picks how **the first ring** and **every deeper parent** place their
-direct children. Next layers may be one spec, or a ladder of bands keyed by
-direct-child count. The named presets are shortcuts:
-
-| | | dependency |
-|---|---|---|
-| `polarPetal` | radial, then radial | **none** |
-| `sectoredDagre` | sectors of Dagre pockets once a parent is bushy | `@dagrejs/dagre` |
-| `radialDagre` | a ring of level-1 branches, each remaining subtree drawn by Dagre as one unit | `@dagrejs/dagre` |
-
-Layer modes:
+direct children. `firstLayer` is always an array of count bands. `nextLayers` may
+be one spec, or a ladder of bands keyed by direct-child count.
 
 | mode | |
 |---|---|
-| `radial` | polarPetal's ring at the root, hemisphere deeper |
+| `radial` | full circle at the root, hemisphere deeper |
 | `dagre` | one shallow Dagre pocket along the outbound ray |
 | `bubble` | concentric rings so the group stays round |
+| `dagreSubtree` | remaining descendants as one Dagre tree; the walk does not recurse |
 | `cloud` | Fibonacci-sized arcs along the outbound ray (next layers only) |
 
 ```ts
-import { customLayout } from 'ego-graph';
+import { customLayout } from 'ego-graph/dagre';
 
 customLayout(graph, {
-  firstLayer: { mode: 'radial' },
+  firstLayer: [
+    { upTo: 5, mode: 'dagre' },
+    { upTo: 20, mode: 'radial' },
+    { mode: 'bubble' },
+  ],
   nextLayers: [
     { upTo: 5, mode: 'dagre' },
     { upTo: 20, mode: 'radial' },
@@ -87,16 +89,36 @@ customLayout(graph, {
 
 `cloud` cannot be the first layer — the root has no outbound ray. Each cloud spec has its own `threshold` of `3`, `5`, `8`, `13`, or `21` (default `8`): layer sizes climb the Fibonacci sequence up to that cap, hold, then taper.
 
+`dagre` may set `sectorThreshold` (for example `5`): below that many children, one pocket; at or above, `ceil(n / threshold)` radial sectors of shallow pockets.
+
+Omit `firstLayer` and it defaults to `[{ mode: 'radial' }]`.
+
+Former named presets as specs (Dagre ones need `ego-graph/dagre`):
+
+```ts
+// radial then radial
+customLayout(graph, { firstLayer: [{ mode: 'radial' }], nextLayers: { mode: 'radial' } });
+
+// sectored Dagre
+customLayout(graph, {
+  firstLayer: [{ mode: 'dagre', sectorThreshold: 5 }],
+  nextLayers: { mode: 'dagre', sectorThreshold: 5 },
+});
+
+// a ring of Dagre branches
+customLayout(graph, { firstLayer: [{ mode: 'radial' }], nextLayers: { mode: 'dagreSubtree' } });
+```
+
 `@dagrejs/dagre` is an **optional peer dependency**. It is reachable from
-exactly one module, so importing only `polarPetal` leaves it out of your bundle
-entirely — 8 kB minified against 49 kB.
+exactly one module. Importing `customLayout` from `ego-graph` leaves it out of
+your bundle entirely — 8 kB minified against 49 kB.
 
 ## Classifying your graph
 
 Two optional predicates, and they are **orthogonal axes**:
 
 ```ts
-radialDagre(graph, {
+customLayout(graph, {
   // Does this edge define hierarchy? Default: every edge does.
   isStructural: (edge) => edge.type !== 'same-ip',
   // Keep this node out of the tree and park it on the periphery. Default: none.
@@ -149,7 +171,10 @@ function AutoLayout({ nodes, edges, root }) {
 
   useEffect(() => {
     if (!nodesInitialized) return;
-    const positions = radialDagre(toLayoutGraph(nodes, edges, root));
+    const positions = customLayout(toLayoutGraph(nodes, edges, root), {
+      firstLayer: [{ mode: 'radial' }],
+      nextLayers: { mode: 'radial' },
+    });
     const laidOut = applyPositions(nodes, positions);
     setNodes(laidOut);
     setEdges(retargetHandles(laidOut, edges));
