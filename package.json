@@ -96,13 +96,13 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@biomejs/biome": "2.5.9",
+    "@biomejs/biome": "2.5.14",
     "@dagrejs/dagre": "^3.0.0",
     "publint": "^0.3.23",
-    "tsdown": "^0.22.14",
+    "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.11"
+    "vitest": "5.0.1"
   }
 }
